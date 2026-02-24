@@ -1,0 +1,51 @@
+{
+    "start": "👋 Assalomu alaykum!\nSiz “Buxgalteriya” kursining rasmiy Telegram botiga xush kelibsiz.\nBu bot orqali siz kurs uchun to‘lovni amalga oshirishingiz mumkin.\n💳 To‘lov tasdiqlangandan so‘ng siz yopiq (private) guruhga qo‘shilasiz va barcha dars materiallariga kirish imkoniyatiga ega bo‘lasiz.\nKursga qo‘shilish uchun quyidagi tugma orqali to‘lovni amalga oshiring.\n\n👋 Здравствуйте!\nВы приветствуете официальный Telegram-бот курса «Бухгалтерии».\nЧерез этого бота вы можете оплатить курс.\n💳 После подтверждения оплаты вы будете добавлены в закрытую (private) группу и получите доступ ко всем материалам курса.\nЧтобы присоединиться к курсу, воспользуйтесь кнопкой ниже для оплаты.",
+    "\uD83C\uDDFA\uD83C\uDDFF uz":{
+          "message_text": {
+            "phone": "Iltimos telefon raqamingizni kiritinf\nMisol uchun — +998991234567",
+            "name": "Iltimos ismingizni kiriting:\nMisol uchun: Ismoil",
+            "error_phone": "Iltimos telefon raqamni to'g'ri kiriting\nMisol uchun - +998991234567",
+            "error_name": "Iltimos isimni to'g'ri kiriting\nMisol uchun - Ismoil",
+            "confirmed_userinfo": "Ma'lumotlaringizni tasdiqlaysizmi?\n",
+            "conf_phone": "📞 Telefon raqamingiz: ",
+            "conf_name": "📝 Ismingiz: ",
+            "offer_conf": "\uD83E\uDD1D Taklif: ",
+            "issue": "Iltimos shikoyatingizni yozing:",
+            "issue_received": "Xabaringiz muvaffaqiyatli yuborildi",
+            "error_issue": "Xabarni yuborishda xatolik",
+            "problem": "❗ Shikoyat: ",
+            "issue_or_offer": "Shikoyat yoki takliflaringiz bo'lsa tugmalardan birini tanlang",
+            "offer": "Iltimos taklifingizni yozing:"
+      },
+      "buttons": {
+          "contact": "📞 Contactni jo'natish",
+          "back": "⬅️ Orqaga",
+          "confirm": "✅ Tasdiqlash",
+          "rejected": "❌ Bekor qilish"
+      }
+    },
+  "\uD83C\uDDF7\uD83C\uDDFA ru": {
+      "message_text": {
+            "phone": "Пожалуйста, введите ваш номер телефона:\nНапример: +998991234567",
+            "name": "Пожалуйста, введите ваше имя:\nНапример: Исмоил",
+            "error_phone": "Пожалуйста, введите номер телефона правильно\nНапример: +998991234567",
+            "error_name": "Пожалуйста, введите имя правильно\nНапример: Исмоил",
+            "confirmed_userinfo": "Подтверждаете ли вы свои данные?\n",
+            "conf_phone": "📞 Ваш номер телефона: ",
+            "conf_name": "📝 Ваше имя: ",
+            "offer_conf": "\uD83E\uDD1D Предложение: ",
+            "issue": "Пожалуйста, опишите вашу жалобу:",
+            "issue_received": "Ваше сообщение успешно отправлено",
+            "error_issue": "Ошибка при отправке сообщения",
+            "problem": "❗ Проблема: ",
+            "issue_or_offer": "Если у вас есть жалоба или предложение, выберите одну из кнопок",
+            "offer": "Пожалуйста, напишите ваше предложение:"
+      },
+        "buttons": {
+            "contact": "📞 Отправить контакт",
+            "back": "⬅️ Назад",
+            "confirm": "✅ Подтвердить",
+            "rejected": "❌ Отменить"
+        }
+  }
+}
