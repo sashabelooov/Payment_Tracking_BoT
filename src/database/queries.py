@@ -49,6 +49,15 @@ async def update_user_billing(telegram_id: int, next_billing_date: date, payment
         )
 
 
+async def update_user_language(telegram_id: int, language: str):
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE users SET language = $2 WHERE telegram_id = $1",
+            telegram_id, language,
+        )
+
+
 async def deactivate_user(telegram_id: int):
     pool = get_pool()
     async with pool.acquire() as conn:
@@ -139,17 +148,20 @@ async def get_users_with_expired_billing() -> list[dict]:
 # --- Course queries ---
 
 
-async def create_course(title: str, start_date, end_date,
-                        total_amount: int, monthly_amount: int, months_count: int) -> dict:
+async def create_course(title: str, description: str, start_date, end_date,
+                        total_amount: int, monthly_amount: int, months_count: int,
+                        group_id: int = None, invite_link: str = '') -> dict:
     pool = get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             """
-            INSERT INTO courses (title, start_date, end_date, total_amount, monthly_amount, months_count)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO courses (title, description, start_date, end_date, total_amount,
+                                 monthly_amount, months_count, group_id, invite_link)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *
             """,
-            title, start_date, end_date, total_amount, monthly_amount, months_count,
+            title, description, start_date, end_date, total_amount, monthly_amount,
+            months_count, group_id, invite_link,
         )
         return dict(row)
 

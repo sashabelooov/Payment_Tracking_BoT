@@ -13,7 +13,7 @@ from config import ADMIN_IDS, GROUP_ID
 from database.queries import (
     get_all_users, get_payment_stats, deactivate_user,
     create_course, get_all_courses, get_course,
-    get_course_enrollments_with_users,
+    get_course_enrollments_with_users, update_user_language,
 )
 
 router = Router()
@@ -98,6 +98,13 @@ async def admin_menu_handler(message: Message, state: FSMContext, bot: Bot):
         await state.update_data(courses_cache={c['title']: c['id'] for c in courses})
         await state.set_state(AdminState.export_select_course)
 
+    elif message.text == "🌐 Tilni o'zgartirish":
+        await message.answer(
+            "🌐 Tilni tanlang:",
+            reply_markup=kb.start_key(),
+        )
+        await state.set_state(AdminState.change_language)
+
     elif message.text == "⬅️ Chiqish":
         await state.clear()
         await message.answer(
@@ -139,6 +146,19 @@ async def course_title_handler(message: Message, state: FSMContext):
         await message.answer("Kurs nomini to'g'ri kiriting (1-200 belgi):")
         return
     await state.update_data(course_title=title)
+    await message.answer("Kurs tavsifini kiriting:")
+    await state.set_state(AdminState.course_description)
+
+
+@router.message(AdminState.course_description)
+async def course_description_handler(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    description = message.text.strip()
+    if not description:
+        await message.answer("Iltimos, kurs tavsifini kiriting:")
+        return
+    await state.update_data(course_description=description)
     await message.answer("Boshlanish sanasini kiriting (DD.MM.YYYY):\nMisol: 02.04.2026")
     await state.set_state(AdminState.course_start_date)
 
@@ -205,19 +225,68 @@ async def course_amount_handler(message: Message, state: FSMContext):
         return
 
     data = await state.get_data()
-    months = data['course_months']
-    monthly = total // months
+    await state.update_data(course_total=total, course_monthly=total // data['course_months'])
+    await message.answer(
+        "Guruh ID sini kiriting (raqam):\n\n"
+        "💡 Guruh ID sini olish uchun @userinfobot ni guruhga qo'shing, "
+        "u guruhning ID sini ko'rsatadi.\n\n"
+        "Misol: -1001234567890"
+    )
+    await state.set_state(AdminState.course_group_id)
+
+
+@router.message(AdminState.course_group_id)
+async def course_group_id_handler(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    try:
+        group_id = int(message.text.strip())
+    except ValueError:
+        await message.answer(
+            "Iltimos, guruh ID sini raqam sifatida kiriting.\n"
+            "Misol: -1001234567890\n\n"
+            "💡 @userinfobot ni guruhga qo'shib, ID ni oling."
+        )
+        return
+    await state.update_data(course_group_id=group_id)
+    await message.answer(
+        "Guruhga taklif havolasini kiriting:\n"
+        "Misol: https://t.me/+abc123xyz"
+    )
+    await state.set_state(AdminState.course_invite_link)
+
+
+@router.message(AdminState.course_invite_link)
+async def course_invite_link_handler(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    invite_link = message.text.strip()
+    if not invite_link.startswith("https://t.me/"):
+        await message.answer(
+            "Iltimos, to'g'ri Telegram havola kiriting.\n"
+            "Misol: https://t.me/+abc123xyz"
+        )
+        return
+    await state.update_data(course_invite_link=invite_link)
+
+    data = await state.get_data()
+    title = data['course_title']
+    description = data.get('course_description', '')
     start = data['course_start']
     end = data['course_end']
-    title = data['course_title']
-
-    await state.update_data(course_total=total, course_monthly=monthly)
+    total = data['course_total']
+    months = data['course_months']
+    monthly = data['course_monthly']
+    group_id = data['course_group_id']
 
     text = (
         f"Kursni tasdiqlaysizmi?\n\n"
         f"📚 {title}\n"
+        f"📝 {description}\n"
         f"📅 {start} — {end}\n"
-        f"💰 {total:,} so'm ({months} oy x {monthly:,} so'm)"
+        f"💰 {total:,} so'm ({months} oy x {monthly:,} so'm)\n"
+        f"👥 Guruh ID: {group_id}\n"
+        f"🔗 Havola: {invite_link}"
     )
     await message.answer(text, reply_markup=kb.conf("🇺🇿 uz"))
     await state.set_state(AdminState.course_confirm)
@@ -235,11 +304,14 @@ async def course_confirm_handler(message: Message, state: FSMContext):
 
         await create_course(
             title=data['course_title'],
+            description=data.get('course_description', ''),
             start_date=start_date,
             end_date=end_date,
             total_amount=data['course_total'],
             monthly_amount=data['course_monthly'],
             months_count=data['course_months'],
+            group_id=data.get('course_group_id'),
+            invite_link=data.get('course_invite_link', ''),
         )
         await message.answer(
             "✅ Kurs muvaffaqiyatli yaratildi!",
@@ -310,6 +382,33 @@ async def export_course_handler(message: Message, state: FSMContext, bot: Bot):
     finally:
         if os.path.exists(filepath):
             os.remove(filepath)
+
+    await message.answer("🔧 Admin panel", reply_markup=kb.admin_menu())
+    await state.set_state(AdminState.menu)
+
+
+# --- Admin language change ---
+
+@router.message(AdminState.change_language)
+async def admin_change_language_handler(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+
+    if message.text not in ("🇺🇿 uz", "🇷🇺 ru"):
+        await message.answer(
+            "🌐 Tilni tanlang:",
+            reply_markup=kb.start_key(),
+        )
+        return
+
+    new_lang = message.text
+    await state.update_data(language=new_lang)
+    await update_user_language(message.from_user.id, new_lang)
+
+    if new_lang == "🇺🇿 uz":
+        await message.answer("✅ Til muvaffaqiyatli o'zgartirildi!")
+    else:
+        await message.answer("✅ Язык успешно изменён!")
 
     await message.answer("🔧 Admin panel", reply_markup=kb.admin_menu())
     await state.set_state(AdminState.menu)

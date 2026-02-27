@@ -248,10 +248,12 @@ async def on_successful_payment(message: Message, state: FSMContext, bot: Bot):
             ),
         )
 
-        if billing_period == 1 and GROUP_ID:
+        # Send one-time group invite on first payment
+        course_group_id = course.get('group_id')
+        if billing_period == 1 and course_group_id:
             try:
                 invite = await bot.create_chat_invite_link(
-                    chat_id=GROUP_ID, member_limit=1,
+                    chat_id=course_group_id, member_limit=1,
                 )
                 await message.answer(
                     text=get_text(lang, 'message_text', 'group_invite').format(
