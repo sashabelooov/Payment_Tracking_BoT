@@ -75,14 +75,14 @@ async def admin_menu_handler(message: Message, state: FSMContext, bot: Bot):
     elif message.text == "📢 Xabar yuborish":
         await message.answer(
             "Barcha foydalanuvchilarga yuboriladigan xabarni yozing:",
-            reply_markup=ReplyKeyboardRemove(),
+            reply_markup=kb.admin_back(),
         )
         await state.set_state(AdminState.broadcast)
 
     elif message.text == "📝 Kurs yaratish":
         await message.answer(
             "Kurs nomini kiriting:",
-            reply_markup=ReplyKeyboardRemove(),
+            reply_markup=kb.admin_back(),
         )
         await state.set_state(AdminState.course_title)
 
@@ -117,6 +117,10 @@ async def admin_menu_handler(message: Message, state: FSMContext, bot: Bot):
 async def broadcast_handler(message: Message, state: FSMContext, bot: Bot):
     if not is_admin(message.from_user.id):
         return
+    if message.text == "⬅️ Orqaga":
+        await message.answer("🔧 Admin panel", reply_markup=kb.admin_menu())
+        await state.set_state(AdminState.menu)
+        return
 
     users = await get_all_users(active_only=True)
     sent = 0
@@ -141,12 +145,16 @@ async def broadcast_handler(message: Message, state: FSMContext, bot: Bot):
 async def course_title_handler(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
+    if message.text == "⬅️ Orqaga":
+        await message.answer("🔧 Admin panel", reply_markup=kb.admin_menu())
+        await state.set_state(AdminState.menu)
+        return
     title = message.text.strip()
     if not title or len(title) > 200:
         await message.answer("Kurs nomini to'g'ri kiriting (1-200 belgi):")
         return
     await state.update_data(course_title=title)
-    await message.answer("Kurs tavsifini kiriting:")
+    await message.answer("Kurs tavsifini kiriting:", reply_markup=kb.admin_back())
     await state.set_state(AdminState.course_description)
 
 
@@ -154,12 +162,16 @@ async def course_title_handler(message: Message, state: FSMContext):
 async def course_description_handler(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
+    if message.text == "⬅️ Orqaga":
+        await message.answer("Kurs nomini kiriting:", reply_markup=kb.admin_back())
+        await state.set_state(AdminState.course_title)
+        return
     description = message.text.strip()
     if not description:
         await message.answer("Iltimos, kurs tavsifini kiriting:")
         return
     await state.update_data(course_description=description)
-    await message.answer("Boshlanish sanasini kiriting (DD.MM.YYYY):\nMisol: 02.04.2026")
+    await message.answer("Boshlanish sanasini kiriting (DD.MM.YYYY):\nMisol: 02.04.2026", reply_markup=kb.admin_back())
     await state.set_state(AdminState.course_start_date)
 
 
@@ -167,19 +179,27 @@ async def course_description_handler(message: Message, state: FSMContext):
 async def course_start_handler(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
+    if message.text == "⬅️ Orqaga":
+        await message.answer("Kurs tavsifini kiriting:", reply_markup=kb.admin_back())
+        await state.set_state(AdminState.course_description)
+        return
     try:
         start_date = datetime.strptime(message.text.strip(), "%d.%m.%Y").date()
     except ValueError:
         await message.answer("Sanani to'g'ri formatda kiriting (DD.MM.YYYY):\nMisol: 02.04.2026")
         return
     await state.update_data(course_start=start_date.isoformat())
-    await message.answer("Tugash sanasini kiriting (DD.MM.YYYY):\nMisol: 02.07.2026")
+    await message.answer("Tugash sanasini kiriting (DD.MM.YYYY):\nMisol: 02.07.2026", reply_markup=kb.admin_back())
     await state.set_state(AdminState.course_end_date)
 
 
 @router.message(AdminState.course_end_date)
 async def course_end_handler(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
+        return
+    if message.text == "⬅️ Orqaga":
+        await message.answer("Boshlanish sanasini kiriting (DD.MM.YYYY):\nMisol: 02.04.2026", reply_markup=kb.admin_back())
+        await state.set_state(AdminState.course_start_date)
         return
     try:
         end_date = datetime.strptime(message.text.strip(), "%d.%m.%Y").date()
@@ -192,13 +212,17 @@ async def course_end_handler(message: Message, state: FSMContext):
         await message.answer("Tugash sanasi boshlanish sanasidan keyin bo'lishi kerak!")
         return
     await state.update_data(course_end=end_date.isoformat())
-    await message.answer("Necha oyga to'lov bo'linsin? (raqam kiriting):\nMisol: 3")
+    await message.answer("Necha oyga to'lov bo'linsin? (raqam kiriting):\nMisol: 3", reply_markup=kb.admin_back())
     await state.set_state(AdminState.course_months_count)
 
 
 @router.message(AdminState.course_months_count)
 async def course_months_handler(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
+        return
+    if message.text == "⬅️ Orqaga":
+        await message.answer("Tugash sanasini kiriting (DD.MM.YYYY):\nMisol: 02.07.2026", reply_markup=kb.admin_back())
+        await state.set_state(AdminState.course_end_date)
         return
     try:
         months = int(message.text.strip())
@@ -208,13 +232,17 @@ async def course_months_handler(message: Message, state: FSMContext):
         await message.answer("Iltimos, musbat son kiriting:\nMisol: 3")
         return
     await state.update_data(course_months=months)
-    await message.answer("Kurs umumiy narxini kiriting (so'mda):\nMisol: 3000000")
+    await message.answer("Kurs umumiy narxini kiriting (so'mda):\nMisol: 3000000", reply_markup=kb.admin_back())
     await state.set_state(AdminState.course_total_amount)
 
 
 @router.message(AdminState.course_total_amount)
 async def course_amount_handler(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
+        return
+    if message.text == "⬅️ Orqaga":
+        await message.answer("Necha oyga to'lov bo'linsin? (raqam kiriting):\nMisol: 3", reply_markup=kb.admin_back())
+        await state.set_state(AdminState.course_months_count)
         return
     try:
         total = int(message.text.strip().replace(" ", "").replace(",", ""))
@@ -230,7 +258,8 @@ async def course_amount_handler(message: Message, state: FSMContext):
         "Guruh ID sini kiriting (raqam):\n\n"
         "💡 Guruh ID sini olish uchun @userinfobot ni guruhga qo'shing, "
         "u guruhning ID sini ko'rsatadi.\n\n"
-        "Misol: -1001234567890"
+        "Misol: -1001234567890",
+        reply_markup=kb.admin_back(),
     )
     await state.set_state(AdminState.course_group_id)
 
@@ -238,6 +267,10 @@ async def course_amount_handler(message: Message, state: FSMContext):
 @router.message(AdminState.course_group_id)
 async def course_group_id_handler(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
+        return
+    if message.text == "⬅️ Orqaga":
+        await message.answer("Kurs umumiy narxini kiriting (so'mda):\nMisol: 3000000", reply_markup=kb.admin_back())
+        await state.set_state(AdminState.course_total_amount)
         return
     try:
         group_id = int(message.text.strip())
@@ -251,7 +284,8 @@ async def course_group_id_handler(message: Message, state: FSMContext):
     await state.update_data(course_group_id=group_id)
     await message.answer(
         "Guruhga taklif havolasini kiriting:\n"
-        "Misol: https://t.me/+abc123xyz"
+        "Misol: https://t.me/+abc123xyz",
+        reply_markup=kb.admin_back(),
     )
     await state.set_state(AdminState.course_invite_link)
 
@@ -259,6 +293,16 @@ async def course_group_id_handler(message: Message, state: FSMContext):
 @router.message(AdminState.course_invite_link)
 async def course_invite_link_handler(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
+        return
+    if message.text == "⬅️ Orqaga":
+        await message.answer(
+            "Guruh ID sini kiriting (raqam):\n\n"
+            "💡 Guruh ID sini olish uchun @userinfobot ni guruhga qo'shing, "
+            "u guruhning ID sini ko'rsatadi.\n\n"
+            "Misol: -1001234567890",
+            reply_markup=kb.admin_back(),
+        )
+        await state.set_state(AdminState.course_group_id)
         return
     invite_link = message.text.strip()
     if not invite_link.startswith("https://t.me/"):

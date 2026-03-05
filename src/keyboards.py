@@ -76,6 +76,13 @@ def back_button(lang):
     return kb.as_markup(resize_keyboard=True)
 
 
+def admin_back():
+    kb = ReplyKeyboardBuilder()
+    kb.add(KeyboardButton(text="⬅️ Orqaga"))
+    kb.adjust(1)
+    return kb.as_markup(resize_keyboard=True)
+
+
 def admin_menu():
     kb = ReplyKeyboardBuilder()
     kb.add(
