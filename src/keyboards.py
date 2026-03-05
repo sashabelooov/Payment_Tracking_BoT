@@ -40,10 +40,10 @@ def main_menu(lang):
         KeyboardButton(text=get_text(lang, 'buttons', 'payment')),
         KeyboardButton(text=get_text(lang, 'buttons', 'my_info')),
         KeyboardButton(text=get_text(lang, 'buttons', 'courses')),
-        KeyboardButton(text=get_text(lang, 'buttons', 'about_course')),
         KeyboardButton(text=get_text(lang, 'buttons', 'contact_us')),
+        KeyboardButton(text=get_text(lang, 'buttons', 'change_language')),
     )
-    kb.adjust(2, 2, 1)
+    kb.adjust(2)
     return kb.as_markup(resize_keyboard=True)
 
 
@@ -76,6 +76,13 @@ def back_button(lang):
     return kb.as_markup(resize_keyboard=True)
 
 
+def admin_back():
+    kb = ReplyKeyboardBuilder()
+    kb.add(KeyboardButton(text="⬅️ Orqaga"))
+    kb.adjust(1)
+    return kb.as_markup(resize_keyboard=True)
+
+
 def admin_menu():
     kb = ReplyKeyboardBuilder()
     kb.add(
@@ -84,6 +91,7 @@ def admin_menu():
         KeyboardButton(text="📝 Kurs yaratish"),
         KeyboardButton(text="📥 Excelga yuklash"),
         KeyboardButton(text="📢 Xabar yuborish"),
+        KeyboardButton(text="🌐 Tilni o'zgartirish"),
         KeyboardButton(text="⬅️ Chiqish"),
     )
     kb.adjust(2)

@@ -32,11 +32,14 @@ async def create_tables():
             CREATE TABLE IF NOT EXISTS courses (
                 id SERIAL PRIMARY KEY,
                 title VARCHAR(255) NOT NULL UNIQUE,
+                description TEXT DEFAULT '',
                 start_date DATE NOT NULL,
                 end_date DATE NOT NULL,
                 total_amount BIGINT NOT NULL,
                 monthly_amount BIGINT NOT NULL,
                 months_count INTEGER NOT NULL,
+                group_id BIGINT,
+                invite_link TEXT DEFAULT '',
                 is_active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT NOW()
             );
@@ -57,4 +60,15 @@ async def create_tables():
         await conn.execute("""
             ALTER TABLE payments ADD COLUMN IF NOT EXISTS
                 course_id INTEGER REFERENCES courses(id) ON DELETE SET NULL;
+        """)
+        # Add description to courses if it doesn't exist yet
+        await conn.execute("""
+            ALTER TABLE courses ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';
+        """)
+        # Add group_id and invite_link to courses if they don't exist yet
+        await conn.execute("""
+            ALTER TABLE courses ADD COLUMN IF NOT EXISTS group_id BIGINT;
+        """)
+        await conn.execute("""
+            ALTER TABLE courses ADD COLUMN IF NOT EXISTS invite_link TEXT DEFAULT '';
         """)

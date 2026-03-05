@@ -13,6 +13,8 @@ class UserState(StatesGroup):
     course_list = State()
     course_detail = State()
     course_payment_method = State()
+    # Language change
+    change_language = State()
 
 
 class AdminState(StatesGroup):
@@ -20,10 +22,15 @@ class AdminState(StatesGroup):
     broadcast = State()
     # Course creation FSM
     course_title = State()
+    course_description = State()
     course_start_date = State()
     course_end_date = State()
     course_months_count = State()
     course_total_amount = State()
+    course_group_id = State()
+    course_invite_link = State()
     course_confirm = State()
     # Excel export
     export_select_course = State()
+    # Language change
+    change_language = State()

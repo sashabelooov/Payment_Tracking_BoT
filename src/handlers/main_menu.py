@@ -7,7 +7,7 @@ from states import UserState
 import keyboards as kb
 from database.queries import (
     get_user, get_active_courses, get_course,
-    get_user_enrollment_by_telegram,
+    get_user_enrollment_by_telegram, update_user_language,
 )
 from payments.click import send_click_invoice_for_course
 from payments.payme import send_payme_invoice_for_course
@@ -30,7 +30,6 @@ async def main_menu_handler(message: Message, state: FSMContext):
 
     payment_btn = get_text(lang, 'buttons', 'payment')
     my_info_btn = get_text(lang, 'buttons', 'my_info')
-    about_btn = get_text(lang, 'buttons', 'about_course')
     contact_btn = get_text(lang, 'buttons', 'contact_us')
 
     if message.text == payment_btn:
@@ -51,17 +50,18 @@ async def main_menu_handler(message: Message, state: FSMContext):
             text = "[User not found]"
         await message.answer(text=text, reply_markup=kb.back_button(lang))
 
-    elif message.text == about_btn:
-        await message.answer(
-            text=get_text(lang, 'message_text', 'about_course_text'),
-            reply_markup=kb.back_button(lang),
-        )
-
     elif message.text == contact_btn:
         await message.answer(
             text=get_text(lang, 'message_text', 'contact_text'),
             reply_markup=kb.back_button(lang),
         )
+
+    elif message.text == get_text(lang, 'buttons', 'change_language'):
+        await message.answer(
+            text=get_text(lang, 'message_text', 'select_language'),
+            reply_markup=kb.start_key(),
+        )
+        await state.set_state(UserState.change_language)
 
     elif message.text == get_text(lang, 'buttons', 'courses'):
         courses = await get_active_courses()
@@ -116,6 +116,7 @@ async def course_list_handler(message: Message, state: FSMContext):
 
     text = get_text(lang, 'message_text', 'course_detail').format(
         title=course['title'],
+        description=course.get('description', ''),
         start_date=course['start_date'].strftime('%d.%m.%Y'),
         end_date=course['end_date'].strftime('%d.%m.%Y'),
         total_amount=f"{course['total_amount']:,}",
@@ -180,6 +181,7 @@ async def course_payment_method_handler(message: Message, state: FSMContext, bot
             paid = enrollment['payments_completed'] if enrollment else 0
             text = get_text(lang, 'message_text', 'course_detail').format(
                 title=course['title'],
+                description=course.get('description', ''),
                 start_date=course['start_date'].strftime('%d.%m.%Y'),
                 end_date=course['end_date'].strftime('%d.%m.%Y'),
                 total_amount=f"{course['total_amount']:,}",
@@ -204,3 +206,30 @@ async def course_payment_method_handler(message: Message, state: FSMContext, bot
         await send_click_invoice_for_course(bot, message.chat.id, course, billing_period, lang)
     elif message.text == "💳 Payme":
         await send_payme_invoice_for_course(bot, message.chat.id, course, billing_period, lang)
+
+
+# --- Language change ---
+
+@router.message(UserState.change_language)
+async def change_language_handler(message: Message, state: FSMContext):
+    if message.text not in ("🇺🇿 uz", "🇷🇺 ru"):
+        data = await state.get_data()
+        lang = data.get('language', '🇺🇿 uz')
+        await message.answer(
+            text=get_text(lang, 'message_text', 'select_language'),
+            reply_markup=kb.start_key(),
+        )
+        return
+
+    new_lang = message.text
+    await state.update_data(language=new_lang)
+    await update_user_language(message.from_user.id, new_lang)
+
+    await message.answer(
+        text=get_text(new_lang, 'message_text', 'language_changed'),
+    )
+    await message.answer(
+        text=get_text(new_lang, 'message_text', 'main_menu'),
+        reply_markup=kb.main_menu(new_lang),
+    )
+    await state.set_state(UserState.main_menu)
