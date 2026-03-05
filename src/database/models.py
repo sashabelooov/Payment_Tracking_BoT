@@ -72,3 +72,20 @@ async def create_tables():
         await conn.execute("""
             ALTER TABLE courses ADD COLUMN IF NOT EXISTS invite_link TEXT DEFAULT '';
         """)
+        # Bot admins table (added by main admins)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS bot_admins (
+                id SERIAL PRIMARY KEY,
+                telegram_id BIGINT UNIQUE NOT NULL,
+                added_by BIGINT NOT NULL,
+                added_at TIMESTAMP DEFAULT NOW()
+            );
+        """)
+        # Add receipt_file_id to payments if it doesn't exist
+        await conn.execute("""
+            ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_file_id TEXT;
+        """)
+        # Add username to users if it doesn't exist
+        await conn.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(255);
+        """)

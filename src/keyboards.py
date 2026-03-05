@@ -83,18 +83,56 @@ def admin_back():
     return kb.as_markup(resize_keyboard=True)
 
 
-def admin_menu():
+def admin_menu(is_main_admin=False):
     kb = ReplyKeyboardBuilder()
     kb.add(
+        KeyboardButton(text="💰 To'lov"),
         KeyboardButton(text="👥 Foydalanuvchilar"),
         KeyboardButton(text="📊 Statistika"),
         KeyboardButton(text="📝 Kurs yaratish"),
         KeyboardButton(text="📥 Excelga yuklash"),
         KeyboardButton(text="📢 Xabar yuborish"),
+        KeyboardButton(text="🚫 Guruhdan chiqarish"),
         KeyboardButton(text="🌐 Tilni o'zgartirish"),
-        KeyboardButton(text="⬅️ Chiqish"),
+    )
+    if is_main_admin:
+        kb.add(
+            KeyboardButton(text="➕ Admin qo'shish"),
+            KeyboardButton(text="➖ Admin o'chirish"),
+        )
+    kb.add(KeyboardButton(text="⬅️ Chiqish"))
+    kb.adjust(2)
+    return kb.as_markup(resize_keyboard=True)
+
+
+def admin_pay_method():
+    kb = ReplyKeyboardBuilder()
+    kb.add(
+        KeyboardButton(text="💵 Naqd"),
+        KeyboardButton(text="💳 Karta"),
+        KeyboardButton(text="⬅️ Orqaga"),
     )
     kb.adjust(2)
+    return kb.as_markup(resize_keyboard=True)
+
+
+def admin_confirm():
+    kb = ReplyKeyboardBuilder()
+    kb.add(
+        KeyboardButton(text="✅ Tasdiqlash"),
+        KeyboardButton(text="❌ Bekor qilish"),
+    )
+    kb.adjust(2)
+    return kb.as_markup(resize_keyboard=True)
+
+
+def admin_list_keyboard(admins: list):
+    """Dynamic keyboard to select an admin to remove."""
+    kb = ReplyKeyboardBuilder()
+    for admin in admins:
+        kb.add(KeyboardButton(text=f"{admin['telegram_id']}"))
+    kb.add(KeyboardButton(text="⬅️ Orqaga"))
+    kb.adjust(1)
     return kb.as_markup(resize_keyboard=True)
 
 

@@ -113,6 +113,7 @@ async def confirm_registration(message: Message, state: FSMContext):
             full_name=data['user_name'],
             phone=data['phone'],
             language=lang,
+            username=message.from_user.username,
         )
         await message.answer(
             text=get_text(lang, 'message_text', 'registered'),

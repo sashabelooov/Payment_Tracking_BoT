@@ -23,7 +23,7 @@ src/
 │   ├── registration.py  # /start, language, phone, name, confirm
 │   ├── main_menu.py     # Main menu + course browsing/payment
 │   ├── payment.py       # Legacy payment + course payment callbacks
-│   └── admin.py         # /admin, users, stats, broadcast, course CRUD, Excel export
+│   └── admin.py         # /adminpanel, users, stats, broadcast, course CRUD, Excel export, payments, admin mgmt
 ├── database/            # PostgreSQL layer
 │   ├── __init__.py      # Re-exports pool functions
 │   ├── connection.py    # asyncpg pool management
@@ -52,16 +52,18 @@ python runbot.py
 - FSM states are in `states.py` — each handler file filters by its states
 - Keyboards are in `keyboards.py` — one function per keyboard
 - Bot token and secrets are in `.env` — never hardcode
-- Admin access is controlled by `ADMIN_IDS` in `.env` (comma-separated Telegram user IDs)
+- Main admin access is controlled by `ADMIN_IDS` in `.env` (comma-separated Telegram user IDs)
+- Additional admins are stored in `bot_admins` DB table (added by main admins via bot)
 - Router registration order in `handlers/__init__.py`: admin > registration > main_menu > payment
 
 ## Database Schema
 
 ### Tables
 - **users** — telegram_id, full_name, phone, language, registered_at, next_billing_date, payments_completed, is_active
-- **payments** — user_id (FK), amount, payment_method, transaction_id, paid_at, billing_period, course_id (FK, nullable)
-- **courses** — title (UNIQUE), start_date, end_date, total_amount, monthly_amount, months_count, is_active, created_at
+- **payments** — user_id (FK), amount, payment_method, transaction_id, paid_at, billing_period, course_id (FK, nullable), receipt_file_id
+- **courses** — title (UNIQUE), description, start_date, end_date, total_amount, monthly_amount, months_count, group_id, invite_link, is_active, created_at
 - **enrollments** — user_id (FK), course_id (FK), paid_amount, payments_completed, next_billing_date, enrolled_at, UNIQUE(user_id, course_id)
+- **bot_admins** — telegram_id (UNIQUE), added_by, added_at
 
 ## Payment Flow
 
@@ -78,9 +80,13 @@ python runbot.py
 ### Payment callback handlers in `payment.py` detect legacy vs course by payload part count.
 
 ## Admin Panel
-- Access: `/admin` command (only users in `ADMIN_IDS`)
-- Features: user list, statistics, broadcast message, create course (FSM), export to Excel (per course)
-- Course creation FSM: title > start date > end date > months count > total amount > confirm
+- Access: `/adminpanel` command
+- Main admins: defined in `ADMIN_IDS` in `.env` — can add/remove other admins
+- DB admins: stored in `bot_admins` table — added by main admins, cannot manage other admins
+- `is_admin()` checks both `.env` and database
+- Features: manual payment (cash/card), user list, statistics, broadcast, create course, Excel export, kick user from group, add/remove admin (main only)
+- Course creation FSM: title > description > start date > end date > months count > total amount > group_id > invite_link > confirm
+- Admin payment FSM: method (cash/card) > course > phone search > amount > receipt image > confirm
 
 ## Scheduler
 - Reminders sent on days 1, 3, 5 before billing due date (9:00 AM)
@@ -118,7 +124,8 @@ python runbot.py
 2. Add FSM state to `AdminState` in `states.py` if needed
 3. Add `elif message.text == "..."` branch in `admin_menu_handler` in `handlers/admin.py`
 4. Add handler function with `@router.message(AdminState.new_state)` decorator
-5. Always check `is_admin(message.from_user.id)` at the start of each admin handler
+5. Always check `await is_admin(message.from_user.id)` at the start of each admin handler (async!)
+6. Use `is_main_admin()` (sync) for features restricted to main admins only
 
 ### Adding a New Course Feature for Users
 1. Add FSM state to `UserState` in `states.py`
