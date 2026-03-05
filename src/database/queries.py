@@ -2,18 +2,19 @@ from datetime import date, timedelta
 from database.connection import get_pool
 
 
-async def create_user(telegram_id: int, full_name: str, phone: str, language: str) -> dict:
+async def create_user(telegram_id: int, full_name: str, phone: str, language: str,
+                      username: str = None) -> dict:
     pool = get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             """
-            INSERT INTO users (telegram_id, full_name, phone, language)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO users (telegram_id, full_name, phone, language, username)
+            VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (telegram_id) DO UPDATE
-                SET full_name = $2, phone = $3, language = $4, is_active = TRUE
+                SET full_name = $2, phone = $3, language = $4, username = $5, is_active = TRUE
             RETURNING *
             """,
-            telegram_id, full_name, phone, language,
+            telegram_id, full_name, phone, language, username,
         )
         return dict(row)
 
@@ -277,6 +278,98 @@ async def get_course_enrollments_with_users(course_id: int) -> list[dict]:
             course_id,
         )
         return [dict(r) for r in rows]
+
+
+# --- Bot admin queries ---
+
+
+async def get_bot_admins() -> list[dict]:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM bot_admins ORDER BY added_at")
+        return [dict(r) for r in rows]
+
+
+async def is_bot_admin(telegram_id: int) -> bool:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id FROM bot_admins WHERE telegram_id = $1", telegram_id
+        )
+        return row is not None
+
+
+async def add_bot_admin(telegram_id: int, added_by: int) -> dict | None:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            INSERT INTO bot_admins (telegram_id, added_by)
+            VALUES ($1, $2)
+            ON CONFLICT (telegram_id) DO NOTHING
+            RETURNING *
+            """,
+            telegram_id, added_by,
+        )
+        return dict(row) if row else None
+
+
+async def remove_bot_admin(telegram_id: int):
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "DELETE FROM bot_admins WHERE telegram_id = $1", telegram_id
+        )
+
+
+# --- User search ---
+
+
+async def get_user_by_phone(phone: str) -> dict | None:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT * FROM users WHERE phone = $1 AND is_active = TRUE", phone
+        )
+        return dict(row) if row else None
+
+
+async def get_user_enrollments_with_courses(telegram_id: int) -> list[dict]:
+    """Get all enrollments for a user with course info (for kick from group)."""
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT e.*, c.title, c.group_id
+            FROM enrollments e
+            JOIN users u ON u.id = e.user_id
+            JOIN courses c ON c.id = e.course_id
+            WHERE u.telegram_id = $1
+            """,
+            telegram_id,
+        )
+        return [dict(r) for r in rows]
+
+
+# --- Admin payment ---
+
+
+async def create_admin_payment(user_id: int, amount: int, payment_method: str,
+                                billing_period: int, course_id: int,
+                                receipt_file_id: str = None) -> dict:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            INSERT INTO payments (user_id, amount, payment_method, transaction_id,
+                                  billing_period, course_id, receipt_file_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING *
+            """,
+            user_id, amount, payment_method, 'admin_manual',
+            billing_period, course_id, receipt_file_id,
+        )
+        return dict(row)
 
 
 async def get_payment_stats() -> dict:

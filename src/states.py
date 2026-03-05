@@ -34,3 +34,15 @@ class AdminState(StatesGroup):
     export_select_course = State()
     # Language change
     change_language = State()
+    # Admin payment FSM
+    pay_method = State()
+    pay_course = State()
+    pay_phone = State()
+    pay_amount = State()
+    pay_receipt = State()
+    pay_confirm = State()
+    # Add/remove admin
+    add_admin_phone = State()
+    remove_admin_select = State()
+    # Kick user from group
+    kick_phone = State()
